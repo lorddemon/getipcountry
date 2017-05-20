@@ -33,11 +33,43 @@ def usage():
     if os.path.dirname(sys.argv[0]) == os.getcwd():
         comm = "./" + comm
 
-    print "Usage: getipcontry options \n"
+    print "Usage: getipcountry options \n"
     print "       -c: Get Names of ASN and IP's"
     print "\nExamples:"
     print "        " + comm + " -c PA"
     print "        " + comm + " -c BO"
+    print ""
+    print "Countries:"
+    print "             AR for Argentina"
+    print "             AW"
+    print "             BO for Bolivia"
+    print "             BQ"
+    print "             BR for Brasil"
+    print "             BZ"
+    print "             CL for Chile"
+    print "             CO for Colombia"
+    print "             CR for Costa Rica"
+    print "             CU "
+    print "             CW"
+    print "             DO for Dominican Republic"
+    print "             EC for Ecuador"
+    print "             GF"
+    print "             GT for Guatemala"
+    print "             GY"
+    print "             HN"
+    print "             HT"
+    print "             MX for Mexico"
+    print "             NI for Nicaragua"
+    print "             PA for Panama"
+    print "             PE for Peru"
+    print "             PY for Paraguay"
+    print "             SR"
+    print "             SV"
+    print "             SX"
+    print "             TT"
+    print "             US"
+    print "             VE for Venezuela"
+
 
 def checkifexist(asn):
     respuesta = False
@@ -54,6 +86,27 @@ def checkifexist(asn):
                 print "Se encontro el asn: "+num+" en la base de datos, Saltando"
                 respuesta = True
     return respuesta
+
+def showcountry(country):
+    db = sqlite3.connect('LATAMBD')
+    cursor = db.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS latamips(id INTEGER PRIMARY KEY, country TEXT,nameorg TEXT, asns TEXT, networks TEXT, whoisraw TEXT)''')
+    db.commit()
+    consulta="SELECT * from latamips  where country='"+country+"'"
+    cursor.execute(consulta)
+    all_rows = cursor.fetchall()
+    
+    for row in all_rows:
+        print "-------------------------------------------------------------------"
+        print "Nombre: "+row[2]
+        asns = row[3].split("|")
+        networks = row[4].split("|")
+        for nasn in asns:
+            if len(nasn)>0:
+                print "ASN: "+nasn
+        for net in networks:
+            if len(net)>0:
+                print "Network: "+net
 
 def storedb(country,nameorg,asns,networks):
     db = sqlite3.connect('LATAMBD')
@@ -112,16 +165,22 @@ def start(argv):
         usage()
         sys.exit()
     try:
-        opts, args = getopt.getopt(argv, "c:")
+        opts, args = getopt.getopt(argv, "c:s:")
     except getopt.GetoptError:
         usage()
         sys.exit()
     for opt, arg in opts:
         if opt == '-c':
-            global PAIS
             PAIS=arg
+            getips(PAIS)
+        if opt == '-s':
+            PAIS=arg
+            showcountry(PAIS)
 
-    global LACNIC  
+
+def getips(country):
+    global LACNIC
+    global PAIS  
     file = open(LACNIC,"r")
     lines=file.readlines()
     for line in lines:
