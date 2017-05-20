@@ -12,8 +12,8 @@ GetipCountry has two options:
 
 
 The countries are:
-                + AR for Argentina"
-                + AW"
+*                + AR for Argentina"
+*                + AW"
                 + BO for Bolivia"
                 BQ"
                 BR for Brasil"
