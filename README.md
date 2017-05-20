@@ -1,13 +1,13 @@
-##GetipCountry 
+## GetipCountry 
 
 GetipCountry is a tool that help you to get IPs ranges from countries in CIRD format,this tool request to service rdap of Lacnic using asn number getting the IPs Ranges.
 
 GetipCountry has two options:
 
--c XX for Get IPs XX Country
++ -c XX for Get IPs XX Country
 
 
--s XX for Shows IPs XX Country
++ -s XX for Shows IPs XX Country
  
 
 
