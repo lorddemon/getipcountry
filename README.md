@@ -12,54 +12,57 @@ GetipCountry has two options:
 
 
 The countries are:
-*               AR for Argentina"
-*               AW"
-*                BO for Bolivia"
-*                BQ"
-*                BR for Brasil"
-*                BZ"
-*                CL for Chile"
-*                CO for Colombia"
-*                CR for Costa Rica"
-*                CU "
-*                CW"
-*                DO for Dominican Republic"
-*                EC for Ecuador"
-*                GF"
-*                GT for Guatemala"
-*                GY"
-*                HN"
-*                HT"
-*                MX for Mexico"
-*                NI for Nicaragua"
-*                PA for Panama"
-*                PE for Peru"
-*                PY for Paraguay"
-*                SR"
-*                SV"
-*                SX"
-*                TT"
-*                US"
-*                VE for Venezuela"
-
+```
+                AR for Argentina"
+                AW"
+                BO for Bolivia"
+                BQ"
+                BR for Brasil"
+                BZ"
+                CL for Chile"
+                CO for Colombia"
+                CR for Costa Rica"
+                CU "
+                CW"
+                DO for Dominican Republic"
+                EC for Ecuador"
+                GF"
+                GT for Guatemala"
+                GY"
+                HN"
+                HT"
+                MX for Mexico"
+                NI for Nicaragua"
+                PA for Panama"
+                PE for Peru"
+                PY for Paraguay"
+                SR"
+                SV"
+                SX"
+                TT"
+                US"
+                VE for Venezuela"
+```
 
 Example output for Bolivia:
 
 >python getipcountry.py  -s BO
 
-
-- Nombre: Entel S.A. - EntelNet
-- ASN: 6568
-- Network: 168.205.96.0/22
-- Network: 181.115.128.0/17
-- Network: 190.129.0.0/17
-- Network: 190.129.64.0/19
-- Network: 190.129.128.0/17
-- Network: 200.87.0.0/17
-- Network: 200.87.128.0/17
-- Network: 2800:cd0::/32
 ```
 
+----------------------------
+Nombre: Entel S.A. - EntelNet
+ASN: 6568
+Network: 168.205.96.0/22
+Network: 181.115.128.0/17
+Network: 190.129.0.0/17
+Network: 190.129.64.0/19
+Network: 190.129.128.0/17
+Network: 200.87.0.0/17
+Network: 200.87.128.0/17
+Network: 2800:cd0::/32
+
+---------------------------------------------
 Nombre: Zupernet
 ASN: 11585
 -------------------------------------------------------------------
