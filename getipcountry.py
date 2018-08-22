@@ -12,6 +12,7 @@ import getopt
 from random import choice
 PAIS='PA'
 LACNIC="delegated-lacnic-latest"
+database="BD_LATAM"
 user_agents = [
     'Mozilla/5.0 (Windows; U; Windows NT 5.1; it; rv:1.8.1.11) Gecko/20071127 Firefox/2.0.0.11',
     'Opera/9.25 (Windows NT 5.1; U; en)',
@@ -69,26 +70,38 @@ def usage():
     print "             VE for Venezuela"
 
 
-def checkifexist(asn):
+def checkifexist(handle):
     respuesta = False
-    db = sqlite3.connect('LATAMBD')
+    db = sqlite3.connect(database)
     cursor = db.cursor()
-    cursor.execute('''CREATE TABLE IF NOT EXISTS latamips(id INTEGER PRIMARY KEY, country TEXT,nameorg TEXT, asns TEXT, networks TEXT, whoisraw TEXT)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS latamips(id INTEGER PRIMARY KEY, handle TEXT,country TEXT,nameorg TEXT, asns TEXT, network TEXT,network_start TEXT,network_end TEXT, ipVersion TEXT)''')
     db.commit()
-    cursor.execute('''SELECT asns from latamips''')
+    cursor.execute('''SELECT * from latamips where handle=?''',(handle,))
     all_rows = cursor.fetchall()
-    for row in all_rows:
-        numeros=row[0].split("|")
-        for num in numeros:
-            if((len(num) > 0 ) and (num == asn)):
-                print "Se encontro el asn: "+num+" en la base de datos, Saltando"
-                respuesta = True
+    print len(all_rows)
+    if len(all_rows)!=0:
+        print "ya existe registro de la organizacion "+handle
+        respuesta = True
+    return respuesta
+
+def checkifexistNetwork(netw):
+    var_net='"'+netw+'%'+'"'
+    respuesta = False
+    db = sqlite3.connect(database)
+    cursor = db.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS latamips(id INTEGER PRIMARY KEY, handle TEXT,country TEXT,nameorg TEXT, asns TEXT, network TEXT,network_start TEXT,network_end TEXT, ipVersion TEXT)''')
+    db.commit()
+    cursor.execute("SELECT * from latamips where network LIKE ?",(netw+'%',))
+    all_rows = cursor.fetchall()
+    if len(all_rows) > 0:
+        print "Se encontro la red "+netw+" ya en la DB, saltando"
+        respuesta = True
     return respuesta
 
 def showcountry(country):
-    db = sqlite3.connect('LATAMBD')
+    db = sqlite3.connect(database)
     cursor = db.cursor()
-    cursor.execute('''CREATE TABLE IF NOT EXISTS latamips(id INTEGER PRIMARY KEY, country TEXT,nameorg TEXT, asns TEXT, networks TEXT, whoisraw TEXT)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS latamips(id INTEGER PRIMARY KEY, handle TEXT,country TEXT,nameorg TEXT, asns TEXT, network TEXT,network_start TEXT,network_end TEXT, ipVersion TEXT)''')
     db.commit()
     consulta="SELECT * from latamips  where country='"+country+"'"
     cursor.execute(consulta)
@@ -106,14 +119,14 @@ def showcountry(country):
             if len(net)>0:
                 print "Network: "+net
 
-def storedb(country,nameorg,asns,networks):
-    db = sqlite3.connect('LATAMBD')
+def storedb(handle,country,nameorg,asns,network,network_start,network_end,ipVersion):
+    db = sqlite3.connect(database)
     cursor = db.cursor()
-    cursor.execute('''CREATE TABLE IF NOT EXISTS latamips(id INTEGER PRIMARY KEY, country TEXT,nameorg TEXT, asns TEXT, networks TEXT, whoisraw TEXT)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS latamips(id INTEGER PRIMARY KEY, handle TEXT,country TEXT,nameorg TEXT, asns TEXT, network TEXT,network_start TEXT,network_end TEXT, ipVersion TEXT)''')
     db.commit()
     try:
         with db:
-            db.execute('''INSERT INTO latamips(country, nameorg, asns, networks) VALUES(?,?,?,?)''', (country,nameorg, asns, networks))
+            db.execute('''INSERT INTO latamips(handle,country, nameorg, asns, network,network_start,network_end,ipVersion) VALUES(?,?,?,?,?,?,?,?)''', (handle,country, nameorg, asns, network,network_start,network_end,ipVersion))
     except sqlite3.IntegrityError:
         print('Record already exists')
     finally:
@@ -124,38 +137,65 @@ def decode_data(data):
     global PAIS
     print "-----------------------------------------" 
 
-    nombre = data['name']
     asns = ""
-    networks = ""
-    for entidad in data['entities']:
-        if ( PAIS+"-"  in entidad['handle']):
-            #print "Redes "
-            #print entidad['networks']
-            for red in entidad['networks']:
-                networks=networks+"|"+red
-            #print "Numero Sistemas Autonomos"
-            for numaut in entidad['autnums']:
-                asns=asns+"|"+numaut
-    print "Nombre: "+nombre
-    print "Redes: "+networks
-    print "ASN: "+asns
+    handle = ""
+    country = ""
+    nameorg = ""
+    network = ""
+    network_start = ""
+    network_end = ""
+    ipVersion = ""
+
+    handle = data['handle']
+    nameorg = data['vcardArray'][1][1][3]
+    print "Obteniendo Datos de:"+nameorg
+    country = data['vcardArray'][1][3][3][6]
+
+
+    for asn in data['autnums']:
+        if 'handle' in asn:
+            asns= asns+"|"+asn['handle']
+        else:
+            asns= asns+"|"
     
-    storedb(PAIS,nombre,asns,networks)
+    for networks in data['networks']:
+        storedb(handle,country,nameorg,asns,networks['handle'],networks['startAddress'],networks['endAddress'],networks['ipVersion'])
 
 
-def urltodata(asn):
+def getentitydata(entity):
     bandera = True
     while bandera:
         abrirurl = MyOpener()
-        #opener = urllib.FancyURLopener({})
-        url = abrirurl.open("https://rdap.lacnic.net/rdap/autnum/"+asn)
+        url= "https://rdap.lacnic.net/rdap/entity/"+entity
+        print "GET "+url
+        url = abrirurl.open(url)
         data = json.load(url)
-        if ('name' in data):
+        if 'handle' in data:
             bandera = False
-            return data        
+            decode_data(data)
+        elif 'nicbr_reverseDelegations' in data:
+            print "Es Brasil"
         else:
-            print "Se agotaron las peticiones, esperemos un cachito por favor"
+            print "Se agotaron las peticiones, esperemos un momento por favor"
         time.sleep(6)
+        print data
+
+def getipdata(ip):
+    bandera = True
+    while bandera:
+        abrirurl = MyOpener()
+        url = "https://rdap.lacnic.net/rdap/ip/"+ip
+        print "GET "+url
+        url = abrirurl.open(url)
+        data = json.load(url)
+        print data
+        if 'handle' in data:
+            bandera = False
+            getentitydata(data['entities'][0]['handle'])
+        else:
+            print "Se agotaron las peticiones, esperemos un momento por favor"
+        time.sleep(6)
+
 
 def start(argv):
     global PAIS
@@ -181,13 +221,18 @@ def getips(country):
     global PAIS  
     file = open(LACNIC,"r")
     lines=file.readlines()
+    contador =0
     for line in lines:
-        if (('asn' in line) and (PAIS in line)):
-            asn=line.split("|")
-            if not (checkifexist(asn[3])):
-                datos = urltodata(asn[3])
-                decode_data(datos)
-
+        if (('ipv' in line) and (PAIS =='ALL')):
+            ip=line.split("|")
+            datos = getipdata(ip[3])
+        if (('ipv' in line) and (PAIS in line)):
+            contador=contador+1
+            print contador
+            ip=line.split("|")
+            print ip[3]
+            if not (checkifexistNetwork(ip[3])):
+                getipdata(ip[3])
 
 
 if __name__ == "__main__":
