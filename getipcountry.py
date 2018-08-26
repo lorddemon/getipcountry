@@ -12,8 +12,8 @@ import getopt
 from random import choice
 PAIS='PA'
 LACNIC="delegated-lacnic-latest"
-database="BD_LATAM"
-user_agents = [
+database="LATAM_BD"
+user_agents = [ 
     'Mozilla/5.0 (Windows; U; Windows NT 5.1; it; rv:1.8.1.11) Gecko/20071127 Firefox/2.0.0.11',
     'Opera/9.25 (Windows NT 5.1; U; en)',
     'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.1.4322; .NET CLR 2.0.50727)',
@@ -97,6 +97,20 @@ def checkifexistNetwork(netw):
         print "Se encontro la red "+netw+" ya en la DB, saltando"
         respuesta = True
     return respuesta
+def checkifexistAsn(asn):
+    respuesta = False
+    db = sqlite3.connect(database)
+    cursor = db.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS latamips(id INTEGER PRIMARY KEY, handle TEXT,country TEXT,nameorg TEXT, asns TEXT, network TEXT,network_start TEXT,network_end TEXT, ipVersion TEXT)''')
+    db.commit()
+    cursor.execute("SELECT * from latamips where asns LIKE ?",('%'+asn+'%',))
+    all_rows = cursor.fetchall()
+    if len(all_rows) > 0:
+        print "Se encontro la asn "+asn+" ya en la DB, saltando"
+        respuesta = True
+    return respuesta
+
+
 
 def showcountry(country):
     db = sqlite3.connect(database)
@@ -145,11 +159,12 @@ def decode_data(data):
     network_start = ""
     network_end = ""
     ipVersion = ""
-
-    handle = data['handle']
     nameorg = data['vcardArray'][1][1][3]
-    print "Obteniendo Datos de:"+nameorg
+    print "Nombre de la Organizacion: "+nameorg
+    handle = data['handle']
+    print "Identificador Entidad: "+handle
     country = data['vcardArray'][1][3][3][6]
+    print "Pais: "+country
 
 
     for asn in data['autnums']:
@@ -157,11 +172,20 @@ def decode_data(data):
             asns= asns+"|"+asn['handle']
         else:
             asns= asns+"|"
-    
+    print "ASNs Encontrados: "+asns
+    countnetwork=0
     for networks in data['networks']:
-        storedb(handle,country,nameorg,asns,networks['handle'],networks['startAddress'],networks['endAddress'],networks['ipVersion'])
-
-
+        if 'handle' in networks:
+            countnetwork=countnetwork+1
+            print "Red "+str(countnetwork)
+            print "Network: "+networks['handle']
+            print "Direccion de Inicio: "+networks['startAddress']
+            print "Direccion Final: "+networks['endAddress']
+            storedb(handle,country,nameorg,asns,networks['handle'],networks['startAddress'],networks['endAddress'],networks['ipVersion'])
+        else:
+            print "No tiene redes"
+            storedb(handle,country,nameorg,asns,"","","","")
+    print "---------------------------------------------------------"
 def getentitydata(entity):
     bandera = True
     while bandera:
@@ -170,6 +194,7 @@ def getentitydata(entity):
         print "GET "+url
         url = abrirurl.open(url)
         data = json.load(url)
+        print data
         if 'handle' in data:
             bandera = False
             decode_data(data)
@@ -180,17 +205,18 @@ def getentitydata(entity):
         time.sleep(6)
         print data
 
-def getipdata(ip):
+def getasndata(asn):
     bandera = True
     while bandera:
         abrirurl = MyOpener()
-        url = "https://rdap.lacnic.net/rdap/ip/"+ip
+        url = "https://rdap.lacnic.net/rdap/autnum/"+asn
         print "GET "+url
         url = abrirurl.open(url)
         data = json.load(url)
         print data
         if 'handle' in data:
             bandera = False
+            print "Se detecto la ASN de la entidad "+data['entities'][0]['handle']
             getentitydata(data['entities'][0]['handle'])
         else:
             print "Se agotaron las peticiones, esperemos un momento por favor"
@@ -210,29 +236,29 @@ def start(argv):
     for opt, arg in opts:
         if opt == '-c':
             PAIS=arg
-            getips(PAIS)
+            getasn(PAIS)
         if opt == '-s':
             PAIS=arg
             showcountry(PAIS)
 
 
-def getips(country):
+def getasn(country):
     global LACNIC
     global PAIS  
     file = open(LACNIC,"r")
     lines=file.readlines()
     contador =0
     for line in lines:
-        if (('ipv' in line) and (PAIS =='ALL')):
-            ip=line.split("|")
-            datos = getipdata(ip[3])
-        if (('ipv' in line) and (PAIS in line)):
+        #if (('ipv' in line) and (PAIS =='ALL')):
+        #    ip=line.split("|")
+        #    datos = getipdata(ip[3])
+        if (('asn' in line) and (PAIS in line)):
             contador=contador+1
             print contador
-            ip=line.split("|")
-            print ip[3]
-            if not (checkifexistNetwork(ip[3])):
-                getipdata(ip[3])
+            asn=line.split("|")
+            print asn[3]
+            if not (checkifexistAsn(asn[3])):
+                getasndata(asn[3])
 
 
 if __name__ == "__main__":
