@@ -15,13 +15,15 @@ This tool helps us obtain the internet resources assigned to an entity, these re
 
 Python >= 2.7.13
 
-*All the necessary packages are part of the standard library of the python version 2.7.13 or higher*
++ *All the necessary packages are part of the standard library of the python version 2.7.13 or higher*
 
 
 ## Getting the code:
 
+```
 git clone https://github.com/lorddemon/getipcountry.git
 
+```
 
 
 ## Usage
@@ -382,8 +384,9 @@ Networks: 181.188.189.192/27    Network Start: 181.188.189.192  Network End: 181
 
 ## ToDo
 
-Add RIRs
-Working in GUI 
++ Add RIRs
++ Working in GUI 
+
 
 [![Demo](https://img.youtube.com/vi/3DL7Fan4n98/0.jpg)](https://www.youtube.com/watch?v=3DL7Fan4n98)
 
@@ -392,7 +395,8 @@ Working in GUI
 ## FeedBack
 
 Feel free to fork the project, submit any kind of comment, issue or contribution.
-Twitter: *@lorddemon*
-Email: gnina@ehcgroup.io
+
++ Twitter: *@lorddemon*
++ Email: gnina@ehcgroup.io
 
 
