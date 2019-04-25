@@ -13,7 +13,7 @@ from random import choice
 PAIS='PA'
 LACNIC="delegated-lacnic-latest"
 database="LATAM_BD"
-user_agents = [ 
+user_agents = [     
     'Mozilla/5.0 (Windows; U; Windows NT 5.1; it; rv:1.8.1.11) Gecko/20071127 Firefox/2.0.0.11',
     'Opera/9.25 (Windows NT 5.1; U; en)',
     'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.1.4322; .NET CLR 2.0.50727)',
@@ -80,7 +80,7 @@ def checkifexist(handle):
     all_rows = cursor.fetchall()
     print len(all_rows)
     if len(all_rows)!=0:
-        print "ya existe registro de la organizacion "+handle
+        print "ID Record already exists "+handle
         respuesta = True
     return respuesta
 
@@ -94,7 +94,7 @@ def checkifexistNetwork(netw):
     cursor.execute("SELECT * from latamips where network LIKE ?",(netw+'%',))
     all_rows = cursor.fetchall()
     if len(all_rows) > 0:
-        print "Se encontro la red "+netw+" ya en la DB, saltando"
+        print "Network Record already exists "+netw+"  DB, next please"
         respuesta = True
     return respuesta
 def checkifexistAsn(asn):
@@ -106,7 +106,7 @@ def checkifexistAsn(asn):
     cursor.execute("SELECT * from latamips where asns LIKE ?",('%'+asn+'%',))
     all_rows = cursor.fetchall()
     if len(all_rows) > 0:
-        print "Se encontro la asn "+asn+" ya en la DB, saltando"
+        print "ASN Record already exists  "+asn+"  DB, next please"
         respuesta = True
     return respuesta
 
@@ -117,21 +117,22 @@ def showcountry(country):
     cursor = db.cursor()
     cursor.execute('''CREATE TABLE IF NOT EXISTS latamips(id INTEGER PRIMARY KEY, handle TEXT,country TEXT,nameorg TEXT, asns TEXT, network TEXT,network_start TEXT,network_end TEXT, ipVersion TEXT)''')
     db.commit()
-    consulta="SELECT * from latamips  where country='"+country+"'"
-    cursor.execute(consulta)
-    all_rows = cursor.fetchall()
-    
+    consultaIDs="SELECT DISTINCT handle, nameorg,asns from latamips  where country='"+country+"'"
+    cursor.execute(consultaIDs)
+    all_rows = cursor.fetchall()    
     for row in all_rows:
         print "-------------------------------------------------------------------"
-        print "Nombre: "+row[2]
-        asns = row[3].split("|")
-        networks = row[4].split("|")
+        print "Nombre: "+row[1]
+        asns = row[2].split("|")
         for nasn in asns:
             if len(nasn)>0:
                 print "ASN: "+nasn
-        for net in networks:
-            if len(net)>0:
-                print "Network: "+net
+       
+        consultaNets="SELECT * from latamips  where country='"+country+"' and handle='"+row[0]+"' "
+        cursor.execute(consultaNets)
+        respuesta = cursor.fetchall()
+        for fila in respuesta:
+            print "Networks: "+fila[5]+"\tNetwork Start: "+fila[6]+"\tNetwork End: "+fila[7]
 
 def storedb(handle,country,nameorg,asns,network,network_start,network_end,ipVersion):
     db = sqlite3.connect(database)
@@ -159,12 +160,12 @@ def decode_data(data):
     network_start = ""
     network_end = ""
     ipVersion = ""
-    nameorg = data['vcardArray'][1][1][3]
-    print "Nombre de la Organizacion: "+nameorg
+    nameorg = (data['vcardArray'][1][1][3]).encode('utf-8')
+    print "Organization name: "+nameorg.encode('utf-8')
     handle = data['handle']
-    print "Identificador Entidad: "+handle
+    print "ID: "+handle
     country = data['vcardArray'][1][3][3][6]
-    print "Pais: "+country
+    print "Country: "+country
 
 
     for asn in data['autnums']:
@@ -172,18 +173,18 @@ def decode_data(data):
             asns= asns+"|"+asn['handle']
         else:
             asns= asns+"|"
-    print "ASNs Encontrados: "+asns
+    print "ASNs Found: "+asns
     countnetwork=0
     for networks in data['networks']:
         if 'handle' in networks:
             countnetwork=countnetwork+1
             print "Red "+str(countnetwork)
             print "Network: "+networks['handle']
-            print "Direccion de Inicio: "+networks['startAddress']
-            print "Direccion Final: "+networks['endAddress']
+            print "Network Start: "+networks['startAddress']
+            print "Network End: "+networks['endAddress']
             storedb(handle,country,nameorg,asns,networks['handle'],networks['startAddress'],networks['endAddress'],networks['ipVersion'])
         else:
-            print "No tiene redes"
+            print "Networks Not Found"
             storedb(handle,country,nameorg,asns,"","","","")
     print "---------------------------------------------------------"
 def getentitydata(entity):
@@ -201,7 +202,7 @@ def getentitydata(entity):
         elif 'nicbr_reverseDelegations' in data:
             print "Es Brasil"
         else:
-            print "Se agotaron las peticiones, esperemos un momento por favor"
+            print "Requests were exceeded, please wait a moment"
         time.sleep(6)
         print data
 
@@ -219,7 +220,7 @@ def getasndata(asn):
             print "Se detecto la ASN de la entidad "+data['entities'][0]['handle']
             getentitydata(data['entities'][0]['handle'])
         else:
-            print "Se agotaron las peticiones, esperemos un momento por favor"
+            print "Requests were exceeded, please wait a moment"
         time.sleep(6)
 
 
@@ -266,5 +267,5 @@ if __name__ == "__main__":
         start(sys.argv[1:])
     except KeyboardInterrupt:
         print "Search interrupted by user.."
-    except:
-        sys.exit()
+    #except:
+      #  sys.exit()
